@@ -1,11 +1,50 @@
 import os
 import platform
 from transformers import AutoTokenizer, AutoModel
-MODEL_PATH = os.environ.get('MODEL_PATH', 'THUDM/chatglm3-6b')
-TOKENIZER_PATH = os.environ.get("TOKENIZER_PATH", MODEL_PATH)
+from pathlib import Path
+from typing import Annotated, Union
+# MODEL_PATH = os.environ.get('MODEL_PATH', 'THUDM/chatglm3-6b')
+# TOKENIZER_PATH = os.environ.get("TOKENIZER_PATH", MODEL_PATH)
 
-tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH, trust_remote_code=True)
-model = AutoModel.from_pretrained(MODEL_PATH, trust_remote_code=True, device_map="auto").eval()
+# MODEL_PATH = "../finetune_demo/models/ZhipuAI/chatglm3-6b/"
+# TOKENIZER_PATH = "../finetune_demo/models/ZhipuAI/chatglm3-6b/"
+
+# tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH, trust_remote_code=True)
+# model = AutoModel.from_pretrained(MODEL_PATH, trust_remote_code=True, device_map="auto").eval()
+from peft import AutoPeftModelForCausalLM, PeftModelForCausalLM
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PreTrainedModel,
+    PreTrainedTokenizer,
+    PreTrainedTokenizerFast,
+)
+
+ModelType = Union[PreTrainedModel, PeftModelForCausalLM]
+TokenizerType = Union[PreTrainedTokenizer, PreTrainedTokenizerFast]
+
+def _resolve_path(path: Union[str, Path]) -> Path:
+    return Path(path).expanduser().resolve()
+
+
+def load_model_and_tokenizer(model_dir: Union[str, Path]) -> tuple[ModelType, TokenizerType]:
+    model_dir = _resolve_path(model_dir)
+    if (model_dir / 'adapter_config.json').exists():
+        model = AutoPeftModelForCausalLM.from_pretrained(
+            model_dir, trust_remote_code=True, device_map='auto'
+        )
+        tokenizer_dir = model.peft_config['default'].base_model_name_or_path
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_dir, trust_remote_code=True, device_map='auto'
+        )
+        tokenizer_dir = model_dir
+    tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer_dir, trust_remote_code=True
+    )
+    return model, tokenizer
+
+model, tokenizer = load_model_and_tokenizer("../finetune_demo/output/checkpoint-5000/")
 
 os_name = platform.system()
 clear_command = 'cls' if os_name == 'Windows' else 'clear'

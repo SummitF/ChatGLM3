@@ -38,9 +38,8 @@ from transformers import (
 ModelType = Union[PreTrainedModel, PeftModelForCausalLM]
 TokenizerType = Union[PreTrainedTokenizer, PreTrainedTokenizerFast]
 
-MODEL_PATH = os.environ.get('MODEL_PATH', 'THUDM/chatglm3-6b')
-TOKENIZER_PATH = os.environ.get("TOKENIZER_PATH", MODEL_PATH)
-
+# MODEL_PATH = os.environ.get('MODEL_PATH', 'THUDM/chatglm3-6b')
+# TOKENIZER_PATH = os.environ.get("TOKENIZER_PATH", MODEL_PATH)
 
 def _resolve_path(path: Union[str, Path]) -> Path:
     return Path(path).expanduser().resolve()
@@ -66,7 +65,7 @@ def load_model_and_tokenizer(
     return model, tokenizer
 
 
-model, tokenizer = load_model_and_tokenizer(MODEL_PATH, trust_remote_code=True)
+model, tokenizer = load_model_and_tokenizer("../finetune_demo/output/checkpoint-5000/", trust_remote_code=True)
 
 
 class StopOnTokens(StoppingCriteria):
